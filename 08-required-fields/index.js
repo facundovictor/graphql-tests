@@ -5,18 +5,14 @@ const graphqlHTTP = require('express-graphql');
 const {
   GraphQLSchema,
   GraphQLObjectType,
-  GraphQLInputObjectType,
   GraphQLString,
-  GraphQLList,
   GraphQLNonNull,
   GraphQLID,
   GraphQLInt,
   GraphQLBoolean
 } = require('graphql');
 
-const src_path = './src/';
-const { getVideoById, getVideos, createVideo } = require(src_path + 'data');
-const nodeInterface = require(src_path + 'node');
+const { getVideoById } = require('../src/data');
 
 const PORT   = process.env.PORT || 3000;
 const server = express();
@@ -37,24 +33,18 @@ const videoType = new GraphQLObjectType({
       type        : GraphQLInt,
       description : 'The duration of the video (in seconds).'
     },
-    released : {
+    watched  : {
       type        : GraphQLBoolean,
-      description : 'Whether or not the video is released.'
+      description : 'Whether or not the viewer has watched the video.'
     }
-  },
-  interfaces : [nodeInterface]
+  }
 });
-exports.videoType = videoType;
 
 const queryType = new GraphQLObjectType({
   name        : 'QueryType',
   description : 'The root query type.',
   fields      : {
-    videos : {
-      type    : new GraphQLList(videoType),
-      resolve : getVideos
-    },
-    video  : {
+    video : {
       type    : videoType,
       args    : {
         id : {
@@ -69,47 +59,8 @@ const queryType = new GraphQLObjectType({
   }
 });
 
-const VideoInputType = new GraphQLInputObjectType({
-  name   : 'VideoInput',
-  fields : {
-    title    : {
-      type        : new GraphQLNonNull(GraphQLString),
-      description : 'The title of the video.'
-    },
-    duration : {
-      type        : new GraphQLNonNull(GraphQLInt),
-      description : 'The duration of the video (in seconds).'
-    },
-    released : {
-      type        : new GraphQLNonNull(GraphQLBoolean),
-      description : 'Whether or not the video is released.'
-    }
-
-  }
-});
-
-
-const mutationType = new GraphQLObjectType({
-  name        : 'Mutation',
-  description : 'The root Mutation type.',
-  fields      : {
-    createVideo : {
-      type : videoType,
-      args : { 
-        video : {
-          type : new GraphQLNonNull(VideoInputType)
-        }
-      },
-      resolve : (_, args) => {
-        return createVideo(args.video);
-      }
-    }
-  }
-});
-
 const schema = new GraphQLSchema({
-  query    : queryType,
-  mutation : mutationType
+  query : queryType
 });
 
 server.use('/graphql', graphqlHTTP({
@@ -123,16 +74,27 @@ server.listen(PORT, () => {
 
 /*
   Now, go to http://localhost:3000/graphql and type:
-
-  mutation M {
-    createVideo(video :{
-      title:"FOOO",
-      duration: 300,
-      released:false
-    }) {
-      id
+  {
+    video {
       title
     }
   }
 
+  You'll get:
+
+  {
+    "errors": [
+      {
+        "message": "Field \"video\" argument \"id\" of type \"ID!\" is required but not provided.",
+        "locations": [
+          {
+            "line": 16,
+            "column": 3
+          }
+        ]
+      }
+    ]
+  }
+
+  The error says that the id is of Type GraphQlID not null
 */
