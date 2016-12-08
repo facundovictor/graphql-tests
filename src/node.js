@@ -6,6 +6,7 @@ const {
   GraphQLID
 } = require('graphql');
 
+
 const nodeInterface = new GraphQLInterfaceType({
   name   : 'Node',
   fields : {
